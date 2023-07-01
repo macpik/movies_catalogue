@@ -23,5 +23,7 @@ def movie_details(movie_id):
     cast = tmdb_client.get_single_movie_cast(movie_id)
     return render_template("movie_details.html", movie=details, cast=cast)
 
+movie_list_types = ['now_playing', 'top_rated', 'upcoming', 'popular']
+
 if __name__ == '__main__':
     app.run(debug=True)
