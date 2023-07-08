@@ -2,6 +2,7 @@ from main import tmdb_client
 from unittest.mock import Mock
 from tmdb_client import api_token
 import requests
+from main import app
 
 def test_get_poster_url_uses_default_size():
    # Przygotowanie danych
@@ -53,3 +54,21 @@ def test_get_single_movie_cast(monkeypatch):
 
     single_movie_cast = tmdb_client.get_single_movie_cast(movie_id="4234234")
     assert single_movie_cast == mock_cast_list
+
+def call_tmdb_api(endpoint):
+   full_url = f"https://api.themoviedb.org/3/{endpoint}"
+   headers = {
+       "Authorization": f"Bearer {api_token}"
+   }
+   response = requests.get(full_url, headers=headers)
+   response.raise_for_status()
+   return response.json()
+
+def test_homepage(monkeypatch):
+   api_mock = Mock(return_value={'results': []})
+   monkeypatch.setattr("tmdb_client.call_tmdb_api", api_mock)
+
+   with app.test_client() as client:
+       response = client.get('/')
+       assert response.status_code == 200
+       api_mock.assert_called_once_with('movie/popular')
