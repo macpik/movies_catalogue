@@ -3,6 +3,9 @@ from unittest.mock import Mock
 from tmdb_client import api_token
 import requests
 from main import app
+from main import movie_list_types
+import pytest 
+from tmdb_client import call_tmdb_api
 
 def test_get_poster_url_uses_default_size():
    # Przygotowanie danych
@@ -55,20 +58,31 @@ def test_get_single_movie_cast(monkeypatch):
     single_movie_cast = tmdb_client.get_single_movie_cast(movie_id="4234234")
     assert single_movie_cast == mock_cast_list
 
-def call_tmdb_api(endpoint):
-   full_url = f"https://api.themoviedb.org/3/{endpoint}"
-   headers = {
-       "Authorization": f"Bearer {api_token}"
-   }
-   response = requests.get(full_url, headers=headers)
-   response.raise_for_status()
-   return response.json()
-
 def test_homepage(monkeypatch):
-   api_mock = Mock(return_value={'results': []})
-   monkeypatch.setattr("tmdb_client.call_tmdb_api", api_mock)
+    api_mock = Mock(return_value={'results': []})
+    monkeypatch.setattr(tmdb_client, 'get_movies', api_mock)
 
-   with app.test_client() as client:
-       response = client.get('/')
-       assert response.status_code == 200
-       api_mock.assert_called_once_with('movie/popular')
+    with app.test_client() as client:
+        response = client.get('/')
+        assert response.status_code == 200
+        api_mock.assert_called_once()
+
+
+@pytest.mark.parametrize("selected_list", movie_list_types)
+def test_homepage_selected_list(selected_list, monkeypatch):
+    api_mock = Mock(return_value={'results': []})
+
+    def mock_get_movies(how_many, list_type):
+        return [{'title': 'Movie 1'}, {'title': 'Movie 2'}]
+
+    monkeypatch.setattr(tmdb_client, 'get_movies', mock_get_movies)
+    monkeypatch.setattr(tmdb_client, 'call_tmdb_api', api_mock)
+
+    with app.test_client() as client:
+        response = client.get(f'/?list_type={selected_list}')
+        assert response.status_code == 200
+        api_mock.assert_called_once_with(selected_list)
+
+
+
+
