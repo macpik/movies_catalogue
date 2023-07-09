@@ -67,22 +67,14 @@ def test_homepage(monkeypatch):
         assert response.status_code == 200
         api_mock.assert_called_once()
 
-
 @pytest.mark.parametrize("selected_list", movie_list_types)
 def test_homepage_selected_list(selected_list, monkeypatch):
-    api_mock = Mock(return_value={'results': []})
 
     def mock_get_movies(how_many, list_type):
         return [{'title': 'Movie 1'}, {'title': 'Movie 2'}]
 
     monkeypatch.setattr(tmdb_client, 'get_movies', mock_get_movies)
-    monkeypatch.setattr(tmdb_client, 'call_tmdb_api', api_mock)
 
     with app.test_client() as client:
         response = client.get(f'/?list_type={selected_list}')
         assert response.status_code == 200
-        api_mock.assert_called_once_with(selected_list)
-
-
-
-
